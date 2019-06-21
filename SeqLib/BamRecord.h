@@ -183,6 +183,12 @@ class CigarField {
    /** Return whether two Cigar objects are not equivalent */
    bool operator!=(const Cigar& c) const { return !(c == *this); }
 
+   /** ADDED FOR BAMTOOLS ADAPTATION**/
+   /** Clear the cigar vector */
+   void Clear(){
+       m_data.clear();
+   }
+
   /** Print cigar string (eg 35M25S) */
   friend std::ostream& operator<<(std::ostream& out, const Cigar& c);
   
@@ -409,6 +415,89 @@ class BamRecord {
       b->core.flag &= ~BAM_FMREVERSE;
   }
 
+  /** ADDED FOR BAMTOOLS ADAPTATION **/
+  /** Set the paired flag on/off /(true -> on) */
+  void SetIsPaired(bool f){
+      if (f)
+        b->core.flag |= BAM_FMREVERSE;
+      else
+        b->core.flag &= ~BAM_FMREVERSE;
+  }
+  /** Set the proper pair flag on/off /(true -> on) */
+  void SetIsProperPair(bool f){
+      if (f)
+        b->core.flag |= BAM_FPROPER_PAIR;
+      else
+        b->core.flag &= ~BAM_FPROPER_PAIR;
+  }
+
+  /** Set the first mate flag on/off /(true -> on) */
+  void SetIsFirstMate(bool f){
+      if (f)
+        b->core.flag |= BAM_FREAD1;
+      else
+        b->core.flag &= ~BAM_FREAD1;
+  }
+
+  /** Set the mapped flag on/off /(true -> on) */
+  void SetIsMateMapped(bool f){
+      if (f)
+        b->core.flag &= ~BAM_FMUNMAP;
+      else
+        b->core.flag |= BAM_FMUNMAP;
+  }
+  /** Set the secondary flag on/off /(true -> on) */
+  void SetIsSecondMate(bool f){
+      if (f)
+        b->core.flag |= BAM_FSECONDARY;
+      else
+        b->core.flag &= ~BAM_FSECONDARY;
+  }
+
+  /** Set the primary alignment flag on/off /(true -> on) */
+  void SetIsPrimaryAlignment(bool f){
+      if (f)
+        b->core.flag &= ~BAM_FSECONDARY;
+      else
+        b->core.flag |= BAM_FSECONDARY;
+  }
+  /** Set the reverse strand flag on/off /(true -> on) */
+  void SetIsReverseStrand(bool f){
+      if (f)
+        b->core.flag |= BAM_FREVERSE;
+      else
+        b->core.flag &= ~BAM_FREVERSE;
+  }
+
+  /** Set the mate chr id */
+  void SetMateChrID(int32_t id){
+      b->core.mtid = id;
+  }
+
+  /** Set the length */
+  void SetLength(int32_t length){
+      b->core.l_qseq = length;
+  }
+
+  /** Set the mate position */
+  void SetMatePosition(int32_t position){
+      b->core.mpos = position;
+  }
+
+  /** Set the mate chr id */
+  void SetInsertSize(int32_t insert_size){
+      b->core.isize = insert_size;
+  }
+
+  /** TAG MODIFICATION FOR FLOAT */
+  /** Add a float tag
+   * @param tag Name of the tag. eg "XP"
+   * @param val Value for the tag
+   */
+  void AddFloatTag(std::string tag, float val);
+
+  /** END ADDED FOR BAMTOOLS ADAPTATION**/
+
   /** Get the number of cigar fields */
   inline int32_t CigarSize() const { return b ? b->core.n_cigar : -1; }
   
@@ -573,6 +662,9 @@ class BamRecord {
   /** Retrieve the sequence of this read as a string (ACTGN) */
   std::string Sequence() const;
 
+  /** ADDED FOR BAMTOOLS ADAPTATION */
+  std::string AlignedBases() const;
+
   /** Return the mean quality score 
    */
   double MeanPhred() const;
@@ -639,9 +731,9 @@ class BamRecord {
     uint32_t* c = bam_get_cigar(b);
     int32_t p = 0;
     for (size_t i = 0; i < b->core.n_cigar; ++i) {
-      if (bam_cigar_opchr(c[i]) == 'S')
+      if ( (bam_cigar_opchr(c[i]) == 'S') || (bam_cigar_opchr(c[i]) == 'H'))
 	p += bam_cigar_oplen(c[i]);
-      else if (bam_cigar_opchr(c[i]) != 'H') 
+      else // not a clip, so stop counting
 	break;
     }
     return p;

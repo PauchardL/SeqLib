@@ -6,6 +6,8 @@
 #include "SeqLib/BamWalker.h"
 #include "SeqLib/ThreadPool.h"
 
+#include "../SeqLib/htslib/htslib/bgzf.h"
+
 // forward declare this from hts.c
 extern "C" {
 int hts_useek(htsFile *file, long uoffset, int where);
@@ -80,6 +82,10 @@ namespace SeqLib {
       m_region_idx = 0;
 
       return true;
+    }
+
+    int64_t Tell(){
+        return (fp->fp.bgzf->uncompressed_address << 16) | (fp->fp.bgzf->block_offset & 0xFFFF);
     }
 
     // set a pre-loaded index (save on loading each time)
@@ -282,6 +288,11 @@ class BamReader {
 
   /** Return a concatenation of all the headers */
   std::string HeaderConcat() const;
+
+  /** ADDED TO TElL WHERE WE ARE IN FILE */
+  int64_t Tell(){
+      return m_bams.begin()->second.Tell();
+  }
 
  protected:
 

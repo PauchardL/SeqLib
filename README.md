@@ -1,6 +1,22 @@
 [![Build Status](https://travis-ci.org/walaj/SeqLib.svg?branch=master)](https://travis-ci.org/walaj/SeqLib)
 [![Coverage Status](https://coveralls.io/repos/github/walaj/SeqLib/badge.svg?branch=master)](https://coveralls.io/github/walaj/SeqLib?branch=master)
 
+The goal of this fork is to add some missing setters for alignments and tags for float
+The added methods are:
+* SetIsPaired(bool)
+* SetIsProperPair(bool)
+* SetIsFirstMate(bool)
+* SetIsMateMapped(bool)
+* SetMateRefID(int)
+* SetIsSecondMate(bool)
+* SetIsPrimaryAlignment(bool)
+* SetIsReverseStrand(bool)
+
+* GetFloatTag(string)
+* AddFloatTag(string, float)
+
+
+
 C++ interface to HTSlib, BWA-MEM and Fermi
 
 **License:** [Apache2][license]

@@ -58,4 +58,9 @@ bool FastqReader::GetNextSequence(UnalignedSequence& s) {
 
 }
 
+void FastqReader::Rewind()
+{
+    seq = kseq_init(fp);
+}
+
 }

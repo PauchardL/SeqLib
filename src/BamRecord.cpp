@@ -65,7 +65,14 @@ namespace SeqLib {
   }
 
   int32_t BamRecord::PositionEndMate() const { 
-    return b ? (b->core.mpos + (b->core.l_qseq > 0 ? b->core.l_qseq : GetCigar().NumQueryConsumed())) : -1;
+      return b ? (b->core.mpos + (b->core.l_qseq > 0 ? b->core.l_qseq : GetCigar().NumQueryConsumed())) : -1;
+  }
+
+  void BamRecord::AddFloatTag(std::string tag, float val)
+  {
+      if (tag.empty() || !isnanf(val))
+        return;
+      bam_aux_append(b.get(), tag.data(), 'f', 32, (uint8_t*)&val);
   }
 
   GenomicRegion BamRecord::AsGenomicRegion() const {
@@ -89,6 +96,65 @@ namespace SeqLib {
       out[i] = BASES[bam_seqi(p,i)];
     return out;
     
+  }
+
+  std::string BamRecord::AlignedBases() const
+  {
+      // resize AlignedBases
+      std::string QueryBases = Sequence();
+      std::string AlignedBases;
+      AlignedBases.reserve(b->core.l_qseq);
+
+      // iterate over CigarOps
+      int k = 0;
+      Cigar cigar = GetCigar();
+      Cigar::iterator cigarIter = cigar.begin();
+      Cigar::iterator cigarEnd  = cigar.end();
+
+      for ( ; cigarIter != cigarEnd; ++cigarIter ) {
+          const CigarField& op = (*cigarIter);
+          switch ( op.Type() ) {
+
+              // for 'M', 'I', '=', 'X' - write bases
+              case ('M')    :
+              case ('X') :
+              case ('=') :
+                  AlignedBases.append(QueryBases.substr(k, op.Length()));
+                  // INTENTIONAL FALL THROUGH HERE
+
+              // for 'S' - soft clip, do not write bases
+              // for 'I' - insertion, do not write base! (Mod D Wegmann). Reason: algorithm uses reference coordinate system.
+              // but increment placeholder 'k'
+              case ('S') :
+              case ('I')      :
+                  k += op.Length();
+                  break;
+
+              // for 'D' - write gap character
+              case ('D') :
+                  AlignedBases.append(op.Length(), '-');
+                  break;
+
+              // for 'P' - write padding character
+              case ('P'):
+                  AlignedBases.append( op.Length(), '*' );
+                  break;
+
+              // for 'N' - write N's, skip bases in original query sequence
+              case ('N') :
+                  AlignedBases.append( op.Length(), 'N' );
+                  break;
+
+              // for 'H' - hard clip, do nothing to AlignedBases, move to next op
+              case ('H') :
+                  break;
+
+              // invalid CIGAR op-code
+              default:
+                  const std::string message = std::string("invalid CIGAR operation type: ") + op.Type();
+          }
+      }
+      return AlignedBases;
   }
 
   void BamRecord::SetCigar(const Cigar& c) {

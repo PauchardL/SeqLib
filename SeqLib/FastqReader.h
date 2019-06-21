@@ -46,6 +46,10 @@ class FastqReader {
     if (fp)
       gzclose(fp);
   }
+  /** ADDED FOR ATLAS
+   *  Returns internal file pointer to beginning of alignment data
+   */
+  void Rewind();
 
 
  private:
